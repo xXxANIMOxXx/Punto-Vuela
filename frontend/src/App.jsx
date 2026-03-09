@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PlaneTakeoff, LogOut } from 'lucide-react';
+import { Bird, LogOut } from 'lucide-react';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
+import AdminDashboard from './components/AdminDashboard';
 import './index.css';
 
 function App() {
@@ -36,7 +37,7 @@ function App() {
     <div className="app-container animate-fade-in">
       <header className="main-header">
         <div className="brand">
-          <PlaneTakeoff size={28} color="var(--primary)" />
+          <Bird size={28} color="var(--primary)" />
           <span>Punto Vuela Citas</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -47,7 +48,7 @@ function App() {
         </div>
       </header>
       <main className="main-content">
-        <Dashboard user={user} />
+        {user.dni === 'admin' ? <AdminDashboard user={user} /> : <Dashboard user={user} />}
       </main>
     </div>
   );

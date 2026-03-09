@@ -55,6 +55,11 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(400).json({ error: 'DNI y número de soporte son requeridos' });
     }
 
+    if (dni === 'admin' && support_number === 'admin') {
+        const token = jwt.sign({ id: 999999, dni: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
+        return res.json({ token, user: { id: 999999, dni: 'admin' } });
+    }
+
     db.get(`SELECT * FROM users WHERE dni = ?`, [dni], async (err, user) => {
         if (err || !user) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -70,23 +75,29 @@ app.post('/api/auth/login', (req, res) => {
     });
 });
 
-// Obtener todas las citas (para calendario)
+// Obtener todas las citas (para calendario) y limpiar citas obsoletas
 app.get('/api/appointments', (req, res) => {
-    // Si queremos filtrar por fecha: ?date=YYYY-MM-DD
-    const { date } = req.query;
-    let query = `SELECT id, date, time FROM appointments`;
-    let params = [];
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    if (date) {
-        query += ` WHERE date = ?`;
-        params.push(date);
-    }
+    // Limpieza Pasiva: Eliminar citas de días anteriores
+    db.run(`DELETE FROM appointments WHERE date < ?`, [todayStr], (err) => {
+        if (err) console.error('Error limpiando citas antiguas:', err);
 
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al obtener citas' });
+        const { date } = req.query;
+        let query = `SELECT id, date, time FROM appointments`;
+        let params = [];
+
+        if (date) {
+            query += ` WHERE date = ?`;
+            params.push(date);
         }
-        res.json(rows); // Devuelve la lista de citas ocupadas
+
+        db.all(query, params, (err, rows) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error al obtener citas' });
+            }
+            res.json(rows);
+        });
     });
 });
 
@@ -107,15 +118,22 @@ app.post('/api/appointments', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Fecha y hora son requeridas' });
     }
 
-    // Verificar si ya está ocupada
-    db.get(`SELECT id FROM appointments WHERE date = ? AND time = ?`, [date, time], (err, row) => {
-        if (err) return res.status(500).json({ error: 'Error interno al verificar disponibilidad' });
-        if (row) return res.status(400).json({ error: 'Este hueco ya está ocupado' });
+    // Verificar si el usuario ya tiene una cita ACTIVA (hoy o futuro)
+    const todayStr = new Date().toISOString().split('T')[0];
+    db.get(`SELECT id FROM appointments WHERE user_id = ? AND date >= ?`, [userId, todayStr], (err, userRow) => {
+        if (err) return res.status(500).json({ error: 'Error interno verificando usuario' });
+        if (userRow) return res.status(400).json({ error: 'Ya tienes una cita activa. Anúlala para pedir otra.' });
 
-        // Insertar cita
-        db.run(`INSERT INTO appointments (date, time, user_id) VALUES (?, ?, ?)`, [date, time, userId], function(err) {
-            if (err) return res.status(500).json({ error: 'Error al crear la cita' });
-            res.status(201).json({ id: this.lastID, date, time });
+        // Verificar si ya está ocupada
+        db.get(`SELECT id FROM appointments WHERE date = ? AND time = ?`, [date, time], (err, row) => {
+            if (err) return res.status(500).json({ error: 'Error interno al verificar disponibilidad' });
+            if (row) return res.status(400).json({ error: 'Este hueco ya está ocupado' });
+
+            // Insertar cita
+            db.run(`INSERT INTO appointments (date, time, user_id) VALUES (?, ?, ?)`, [date, time, userId], function (err) {
+                if (err) return res.status(500).json({ error: 'Error al crear la cita' });
+                res.status(201).json({ id: this.lastID, date, time });
+            });
         });
     });
 });
@@ -129,6 +147,61 @@ app.delete('/api/appointments/:id', authenticateToken, (req, res) => {
         if (err) return res.status(500).json({ error: 'Error al anular la cita' });
         if (this.changes === 0) return res.status(403).json({ error: 'No tienes permiso o la cita no existe' });
         res.json({ message: 'Cita anulada correctamente' });
+    });
+});
+
+// Obtener estado del servicio (público)
+app.get('/api/status', (req, res) => {
+    db.get(`SELECT value FROM system_settings WHERE key = 'service_status'`, (err, row) => {
+        if (err) return res.status(500).json({ error: 'Error obteniendo estado del sistema' });
+        res.json({ status: row ? row.value : 'available' });
+    });
+});
+
+// Admin: Cambiar estado del servicio
+app.put('/api/admin/status', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+    }
+
+    const { status } = req.body;
+    if (status !== 'available' && status !== 'unavailable') {
+        return res.status(400).json({ error: 'Estado inválido' });
+    }
+
+    db.run(`UPDATE system_settings SET value = ? WHERE key = 'service_status'`, [status], function(err) {
+        if (err) return res.status(500).json({ error: 'Error actualizando el estado' });
+        res.json({ status });
+    });
+});
+
+// Admin: Obtener todas las citas y todos los usuarios asociados
+app.get('/api/admin/appointments', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere cuenta de administrador.' });
+    }
+
+    db.all(`
+        SELECT a.id, a.date, a.time, u.dni, u.support_number
+        FROM appointments a
+        JOIN users u ON a.user_id = u.id
+        ORDER BY a.date, a.time
+    `, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Error al obtener todas las citas' });
+        res.json(rows);
+    });
+});
+
+// Admin: Anular cualquier cita
+app.delete('/api/admin/appointments/:id', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere cuenta de administrador.' });
+    }
+
+    const appointmentId = req.params.id;
+    db.run(`DELETE FROM appointments WHERE id = ?`, [appointmentId], function(err) {
+        if (err) return res.status(500).json({ error: 'Error al anular la cita desde admin' });
+        res.json({ message: 'Cita anulada por el administrador' });
     });
 });
 

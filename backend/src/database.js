@@ -20,6 +20,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
             user_id INTEGER,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`, () => {
+            db.run(`INSERT OR IGNORE INTO system_settings (key, value) VALUES ('service_status', 'available')`);
+        });
     }
 });
 

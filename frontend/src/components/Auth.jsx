@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PlaneTakeoff, User, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bird, User, FileText } from 'lucide-react';
 
 export default function Auth({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
@@ -7,6 +7,14 @@ export default function Auth({ onLogin }) {
   const [supportNumber, setSupportNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [serviceStatus, setServiceStatus] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/api/status')
+      .then(res => res.json())
+      .then(data => setServiceStatus(data.status))
+      .catch(err => console.error('Error fetching service status:', err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,12 +62,27 @@ export default function Auth({ onLogin }) {
     <div className="auth-page">
       <div className="glass-panel auth-card animate-fade-in">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-          <PlaneTakeoff size={48} color="var(--primary)" />
+          <Bird size={48} color="var(--primary)" />
         </div>
         <h1>Punto Vuela Citas</h1>
         <p>Sistema de gestión de citas Guadalinfo</p>
 
-        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '0.875rem', padding: '8px', backgroundColor: '#fee2e2', borderRadius: '8px' }}>{error}</div>}
+        {serviceStatus && (
+          <div style={{
+            padding: '12px',
+            marginBottom: '24px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            backgroundColor: serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            color: serviceStatus === 'available' ? 'var(--success)' : 'var(--danger)',
+            border: `1px solid ${serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+          }}>
+            {serviceStatus === 'available' ? '🟢 Estamos disponibles' : '🔴 Estamos fuera de servicio'}
+          </div>
+        )}
+
+        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '0.875rem', padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: '8px' }}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">

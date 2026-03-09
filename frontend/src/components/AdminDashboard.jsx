@@ -72,7 +72,7 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div className="glass-panel animate-fade-in" style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+      <div className="mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '24px' }}>
         <div>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--primary)' }}>
             <UserSearch size={28} /> Panel de Administración
@@ -126,7 +126,7 @@ export default function AdminDashboard({ user }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {allAppointments.map(app => (
-            <div key={app.id} style={{ 
+            <div key={app.id} className="admin-list-item" style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 

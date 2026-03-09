@@ -23,7 +23,7 @@ export default function CalendarComponent({ appointments, myAppointments, select
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Selector de fecha */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+      <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}>
         <button onClick={handlePrevDay} className="btn" style={{ padding: '8px', background: 'var(--surface)', border: '1px solid var(--border)' }}><ChevronLeft /></button>
         <span style={{ fontSize: '1.25rem', fontWeight: 600, textTransform: 'capitalize' }}>
           {format(selectedDate, "EEEE, d 'de' MMMM", { locale: es })}

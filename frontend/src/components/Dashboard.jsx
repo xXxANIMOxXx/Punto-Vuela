@@ -70,7 +70,7 @@ export default function Dashboard({ user }) {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '32px' }}>
+    <div className="mobile-grid-1" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '32px' }}>
       <div className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
           <Calendar color="var(--primary)" /> Calendario de Citas

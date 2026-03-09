@@ -107,7 +107,7 @@ export default function Dashboard({ user }) {
                 </div>
                 <button 
                   onClick={() => handleDeleteAppointment(app.id)}
-                  style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: '#fee2e2' }}
+                  style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)' }}
                   title="Anular cita"
                 >
                   <Trash2 size={16} />

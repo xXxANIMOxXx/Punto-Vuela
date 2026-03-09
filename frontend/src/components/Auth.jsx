@@ -74,15 +74,15 @@ export default function Auth({ onLogin }) {
             borderRadius: '8px',
             fontWeight: 600,
             fontSize: '0.95rem',
-            backgroundColor: serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            backgroundColor: serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
             color: serviceStatus === 'available' ? 'var(--success)' : 'var(--danger)',
-            border: `1px solid ${serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+            border: `1px solid ${serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
           }}>
             {serviceStatus === 'available' ? '🟢 Estamos disponibles' : '🔴 Estamos fuera de servicio'}
           </div>
         )}
 
-        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '0.875rem', padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: '8px' }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '0.875rem', padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px' }}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">

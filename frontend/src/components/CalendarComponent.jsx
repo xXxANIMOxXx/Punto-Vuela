@@ -52,8 +52,8 @@ export default function CalendarComponent({ appointments, myAppointments, select
                 borderRadius: '8px',
                 padding: '12px',
                 textAlign: 'center',
-                backgroundColor: slotState === 'free' ? '#ecfdf5' : slotState === 'mine' ? '#eff6ff' : '#f1f5f9',
-                opacity: slotState === 'occupied' ? 0.7 : 1,
+                backgroundColor: slotState === 'free' ? 'rgba(34, 197, 94, 0.1)' : slotState === 'mine' ? 'rgba(234, 179, 8, 0.1)' : 'var(--surface)',
+                opacity: slotState === 'occupied' ? 0.6 : 1,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px',
@@ -78,7 +78,7 @@ export default function CalendarComponent({ appointments, myAppointments, select
                 <button 
                   onClick={() => onDelete(appointmentInfo.id)}
                   className="btn btn-danger" 
-                  style={{ padding: '6px', fontSize: '0.875rem', background: 'white' }}
+                  style={{ padding: '6px', fontSize: '0.875rem' }}
                 >
                   Anular Cita
                 </button>

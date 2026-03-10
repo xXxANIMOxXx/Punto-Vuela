@@ -4,9 +4,9 @@ import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, UserCheck } from 'lucide-react';
 
 const TIME_SLOTS = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '16:00', '16:30',
-  '17:00', '17:30', '18:00', '18:30'
+  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30'
 ];
 
 export default function CalendarComponent({ appointments, myAppointments, selectedDate, onSelectDate, onCreate, onDelete }) {

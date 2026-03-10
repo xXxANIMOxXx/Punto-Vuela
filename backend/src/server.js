@@ -138,16 +138,16 @@ app.post('/api/appointments', authenticateToken, (req, res) => {
 
     // Saltar validación de 1 cita máxima si es el Administrador
     if (isOwnerAdmin) {
-        insertAppointment();
-    } else {
-        // Verificar si el usuario ya tiene una cita ACTIVA (hoy o futuro)
-        db.get(`SELECT id FROM appointments WHERE user_id = ? AND date >= ?`, [userId, todayStr], (err, userRow) => {
-            if (err) return res.status(500).json({ error: 'Error interno verificando usuario' });
-            if (userRow) return res.status(400).json({ error: 'Ya tienes una cita activa. Anúlala para pedir otra.' });
+        return insertAppointment();
+    } 
+
+    // Verificar si el usuario ya tiene una cita ACTIVA (hoy o futuro)
+    db.get(`SELECT id FROM appointments WHERE user_id = ? AND date >= ?`, [userId, todayStr], (err, userRow) => {
+        if (err) return res.status(500).json({ error: 'Error interno verificando usuario' });
+        if (userRow) return res.status(400).json({ error: 'Ya tienes una cita activa. Anúlala para pedir otra.' });
             
-            insertAppointment();
-        });
-    }
+        insertAppointment();
+    });
 });
 
 // Anular una cita
@@ -194,7 +194,7 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
     }
 
     db.all(`
-        SELECT a.id, a.date, a.time, u.dni, u.nombre_completo, u.support_number
+        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         ORDER BY a.date, a.time
@@ -203,13 +203,17 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
         
         // Mapear el nombre_completo para el administrador si no existe en BD
         const mappedRows = rows.map(r => {
-            if (!r.dni && a.user_id === 999999) {
+            if (!r.dni && r.user_id === 999999) {
                 // Caso extremo, no debería pasar porque lo controlamos abajo
-                return r; 
+                return {
+                    ...r,
+                    dni: 'admin',
+                    nombre_completo: 'Bloqueado por Administrador'
+                }
             }
             // Si el user_id es el del admin (lo deducimos si no está en la base de datos o si su DNI es null)
             // Dado que no insertamos admin en users, el JOIN falla para el admin y devuelve nulls
-            if (r.dni === null && r.nombre_completo === null) {
+            if (r.dni === null && r.nombre_completo === null || r.user_id === 999999) {
                 return {
                     ...r,
                     dni: 'admin',

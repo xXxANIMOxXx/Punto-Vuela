@@ -4,6 +4,7 @@ import { Bird, User, FileText } from 'lucide-react';
 export default function Auth({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [dni, setDni] = useState('');
+  const [nombreCompleto, setNombreCompleto] = useState('');
   const [supportNumber, setSupportNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,16 @@ export default function Auth({ onLogin }) {
     const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
     
     try {
+      const bodyPayload = isRegister 
+        ? { dni, nombre_completo: nombreCompleto, support_number: supportNumber } 
+        : { dni, support_number: supportNumber };
+
       const res = await fetch(`http://localhost:3000${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ dni, support_number: supportNumber })
+        body: JSON.stringify(bodyPayload)
       });
 
       const data = await res.json();
@@ -98,6 +103,22 @@ export default function Auth({ onLogin }) {
               required
             />
           </div>
+
+          {isRegister && (
+            <div className="input-group">
+              <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={16} /> Nombre Completo
+              </label>
+              <input 
+                type="text" 
+                className="input-field" 
+                placeholder="Ej: Juan Pérez"
+                value={nombreCompleto}
+                onChange={(e) => setNombreCompleto(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           <div className="input-group">
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

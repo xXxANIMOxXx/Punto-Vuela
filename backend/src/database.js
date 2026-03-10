@@ -10,6 +10,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dni TEXT UNIQUE,
+            nombre_completo TEXT,
             support_number TEXT
         )`);
 

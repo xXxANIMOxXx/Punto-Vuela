@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserSearch, Calendar, Power } from 'lucide-react';
+import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays } from 'lucide-react';
+import CalendarComponent from './CalendarComponent';
 
 export default function AdminDashboard({ user }) {
   const [allAppointments, setAllAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceStatus, setServiceStatus] = useState('available');
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const fetchServiceStatus = async () => {
     try {
@@ -70,6 +72,31 @@ export default function AdminDashboard({ user }) {
     }
   };
 
+  const handleCreateBlock = async (dateStr, timeStr) => {
+    try {
+      const res = await fetch('http://localhost:3000/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ date: dateStr, time: timeStr })
+      });
+
+      if (res.ok) {
+        fetchAdminAppointments();
+      } else {
+        const data = await res.json();
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Filtrar las citas que son bloqueos del administrador
+  const adminAppointments = allAppointments.filter(app => app.dni === 'admin');
+
   return (
     <div className="glass-panel animate-fade-in" style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
       <div className="mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '24px' }}>
@@ -116,14 +143,38 @@ export default function AdminDashboard({ user }) {
         </div>
       </div>
 
-      {loading ? (
-        <p>Cargando datos del servidor...</p>
-      ) : allAppointments.length === 0 ? (
-        <div style={{ padding: '32px', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '8px', color: 'var(--text-muted)' }}>
-          <Calendar size={48} style={{ opacity: 0.5, marginBottom: '16px' }} />
-          <div>No hay ninguna cita registrada en el sistema actualmente.</div>
+        <div>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--primary)' }}>
+            <CalendarDays size={28} /> Bloqueo de Horarios
+          </h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+            Selecciona una fecha y hora para bloquear ese hueco, indicando que el administrador no estará disponible.
+          </p>
+          
+          <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+             <CalendarComponent 
+              appointments={allAppointments} 
+              myAppointments={adminAppointments}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              onCreate={handleCreateBlock}
+              onDelete={handleDeleteById}
+            />
+          </div>
         </div>
-      ) : (
+
+        <div style={{ marginTop: '32px' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--primary)' }}>
+             <CalendarIcon size={28} /> Listado de Todas las Citas Activas
+          </h2>
+          {loading ? (
+            <p>Cargando datos del servidor...</p>
+          ) : allAppointments.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '8px', color: 'var(--text-muted)' }}>
+              <CalendarIcon size={48} style={{ opacity: 0.5, marginBottom: '16px' }} />
+              <div>No hay ninguna cita registrada en el sistema actualmente.</div>
+            </div>
+          ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {allAppointments.map(app => (
             <div key={app.id} className="admin-list-item" style={{ 
@@ -141,6 +192,7 @@ export default function AdminDashboard({ user }) {
                 </div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '16px' }}>
                   <span>DNI: {app.dni}</span>
+                  <span>Nombre: {app.nombre_completo || 'N/A'}</span>
                   <span>ID Reserva: #{app.id}</span>
                 </div>
               </div>
@@ -155,6 +207,7 @@ export default function AdminDashboard({ user }) {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

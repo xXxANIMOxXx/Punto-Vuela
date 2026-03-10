@@ -10,7 +10,7 @@ export default function AdminDashboard({ user }) {
 
   const fetchServiceStatus = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/status');
+      const res = await fetch('/api/status');
       if (res.ok) {
         const data = await res.json();
         setServiceStatus(data.status);
@@ -22,7 +22,7 @@ export default function AdminDashboard({ user }) {
 
   const fetchAdminAppointments = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/admin/appointments', {
+      const res = await fetch('/api/admin/appointments', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) setAllAppointments(await res.json());
@@ -41,7 +41,7 @@ export default function AdminDashboard({ user }) {
   const handleToggleStatus = async () => {
     const newStatus = serviceStatus === 'available' ? 'unavailable' : 'available';
     try {
-      const res = await fetch('http://localhost:3000/api/admin/status', {
+      const res = await fetch('/api/admin/status', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export default function AdminDashboard({ user }) {
     if(!window.confirm('¿Seguro que quieres anular esta cita?')) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/appointments/${id}`, {
+      const res = await fetch(`/api/admin/appointments/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -74,7 +74,7 @@ export default function AdminDashboard({ user }) {
 
   const handleCreateBlock = async (dateStr, timeStr) => {
     try {
-      const res = await fetch('http://localhost:3000/api/appointments', {
+      const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

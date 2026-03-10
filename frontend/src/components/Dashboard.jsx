@@ -11,8 +11,8 @@ export default function Dashboard({ user }) {
   const fetchAppointments = async () => {
     try {
       const [allRes, meRes] = await Promise.all([
-        fetch('http://localhost:3000/api/appointments'),
-        fetch('http://localhost:3000/api/appointments/me', {
+        fetch('/api/appointments'),
+        fetch('/api/appointments/me', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -32,7 +32,7 @@ export default function Dashboard({ user }) {
 
   const handleCreateAppointment = async (dateStr, timeStr) => {
     try {
-      const res = await fetch('http://localhost:3000/api/appointments', {
+      const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export default function Dashboard({ user }) {
 
   const handleDeleteAppointment = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/appointments/${id}`, {
+      const res = await fetch(`/api/appointments/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

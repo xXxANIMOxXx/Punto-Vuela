@@ -11,7 +11,7 @@ export default function Auth({ onLogin }) {
   const [serviceStatus, setServiceStatus] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/status')
+    fetch('/api/status')
       .then(res => res.json())
       .then(data => setServiceStatus(data.status))
       .catch(err => console.error('Error fetching service status:', err));
@@ -51,7 +51,7 @@ export default function Auth({ onLogin }) {
         ? { dni, nombre_completo: nombreCompleto, support_number: supportNumber } 
         : { dni, support_number: supportNumber };
 
-      const res = await fetch(`http://localhost:3000${endpoint}`, {
+      const res = await fetch(`${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -67,7 +67,7 @@ export default function Auth({ onLogin }) {
 
       if (isRegister) {
         // Auto login after register
-        const loginRes = await fetch(`http://localhost:3000/api/auth/login`, {
+        const loginRes = await fetch(`/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dni, support_number: supportNumber })

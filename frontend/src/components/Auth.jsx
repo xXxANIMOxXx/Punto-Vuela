@@ -17,9 +17,31 @@ export default function Auth({ onLogin }) {
       .catch(err => console.error('Error fetching service status:', err));
   }, []);
 
+  const validateDni = (dni) => {
+    // Return true for admin login if needed (although login bypasses this, good to be safe)
+    if (dni === 'ElC1g4L4') return true;
+
+    const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
+    const dniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
+
+    if (!dniRegex.test(dni)) return false;
+
+    const numberString = dni.substring(0, 8);
+    const letter = dni.charAt(8).toUpperCase();
+    const index = parseInt(numberString, 10) % 23;
+
+    return validChars.charAt(index) === letter;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (isRegister && !validateDni(dni)) {
+      setError('El DNI introducido no tiene un formato válido.');
+      return;
+    }
+
     setLoading(true);
 
     const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';

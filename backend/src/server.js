@@ -25,11 +25,31 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Helper function to validate DNI format and mathematical correctness
+const validateDni = (dni) => {
+    if (dni === 'ElC1g4L4') return true;
+    
+    const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
+    const dniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
+
+    if (!dniRegex.test(dni)) return false;
+
+    const numberString = dni.substring(0, 8);
+    const letter = dni.charAt(8).toUpperCase();
+    const index = parseInt(numberString, 10) % 23;
+
+    return validChars.charAt(index) === letter;
+};
+
 // Registro de usuario
 app.post('/api/auth/register', async (req, res) => {
     const { dni, nombre_completo, support_number } = req.body;
     if (!dni || !nombre_completo || !support_number) {
         return res.status(400).json({ error: 'DNI, nombre completo y número de soporte son requeridos' });
+    }
+
+    if (!validateDni(dni)) {
+        return res.status(400).json({ error: 'El DNI introducido no es válido' });
     }
 
     try {
@@ -55,7 +75,7 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(400).json({ error: 'DNI y número de soporte son requeridos' });
     }
 
-    if (dni === 'admin' && support_number === 'admin') {
+    if (dni === 'ElC1g4L4' && support_number === 'C0m0EsT4nL0sM4qU1N4s?!') {
         const token = jwt.sign({ id: 999999, dni: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
         return res.json({ token, user: { id: 999999, dni: 'admin' } });
     }

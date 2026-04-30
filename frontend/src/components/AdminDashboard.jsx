@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays, Megaphone } from 'lucide-react';
+import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays, Megaphone, Download } from 'lucide-react';
 import CalendarComponent from './CalendarComponent';
 
 export default function AdminDashboard({ user }) {
@@ -114,6 +114,28 @@ export default function AdminDashboard({ user }) {
         alert(data.error);
       }
     } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleExportHistory = async () => {
+    try {
+      const res = await fetch('/api/admin/history/export', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) throw new Error('Error al exportar');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'historial_citas.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      alert('Hubo un error al exportar el historial');
       console.error(err);
     }
   };
@@ -263,9 +285,18 @@ export default function AdminDashboard({ user }) {
         </div>
 
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--primary)' }}>
-             <CalendarIcon size={28} /> Listado de Todas las Citas Activas
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: 'var(--primary)' }}>
+               <CalendarIcon size={28} /> Listado de Todas las Citas Activas
+            </h2>
+            <button 
+              onClick={handleExportHistory}
+              className="btn"
+              style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-main)', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              <Download size={18} /> Descargar Histórico (CSV)
+            </button>
+          </div>
           {loading ? (
             <p>Cargando datos del servidor...</p>
           ) : allAppointments.length === 0 ? (

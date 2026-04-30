@@ -95,29 +95,24 @@ app.post('/api/auth/login', (req, res) => {
     });
 });
 
-// Obtener todas las citas (para calendario) y limpiar citas obsoletas
+// Obtener todas las citas (para calendario)
 app.get('/api/appointments', (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
+    const { date } = req.query;
 
-    // Limpieza Pasiva: Eliminar citas de días anteriores
-    db.run(`DELETE FROM appointments WHERE date < ?`, [todayStr], (err) => {
-        if (err) console.error('Error limpiando citas antiguas:', err);
+    let query = `SELECT id, date, time FROM appointments WHERE date >= ?`;
+    let params = [todayStr];
 
-        const { date } = req.query;
-        let query = `SELECT id, date, time FROM appointments`;
-        let params = [];
+    if (date) {
+        query = `SELECT id, date, time FROM appointments WHERE date = ?`;
+        params = [date];
+    }
 
-        if (date) {
-            query += ` WHERE date = ?`;
-            params.push(date);
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al obtener citas' });
         }
-
-        db.all(query, params, (err, rows) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error al obtener citas' });
-            }
-            res.json(rows);
-        });
+        res.json(rows);
     });
 });
 
@@ -234,18 +229,21 @@ app.put('/api/admin/message', authenticateToken, (req, res) => {
     });
 });
 
-// Admin: Obtener todas las citas y todos los usuarios asociados
+// Admin: Obtener todas las citas activas y todos los usuarios asociados
 app.get('/api/admin/appointments', authenticateToken, (req, res) => {
     if (req.user.dni !== 'admin') {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere cuenta de administrador.' });
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     db.all(`
         SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.date >= ?
         ORDER BY a.date, a.time
-    `, [], (err, rows) => {
+    `, [todayStr], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Error al obtener todas las citas' });
         
         // Mapear el nombre_completo para el administrador si no existe en BD
@@ -284,6 +282,35 @@ app.delete('/api/admin/appointments/:id', authenticateToken, (req, res) => {
     db.run(`DELETE FROM appointments WHERE id = ?`, [appointmentId], function(err) {
         if (err) return res.status(500).json({ error: 'Error al anular la cita desde admin' });
         res.json({ message: 'Cita anulada por el administrador' });
+    });
+});
+
+// Admin: Exportar histórico completo de citas a CSV
+app.get('/api/admin/history/export', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+    }
+
+    db.all(`
+        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo
+        FROM appointments a
+        LEFT JOIN users u ON a.user_id = u.id
+        ORDER BY a.date DESC, a.time DESC
+    `, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Error al exportar histórico' });
+        
+        // Configurar cabeceras BOM para Excel y forzar descarga
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="historial_citas.csv"');
+        
+        let csv = '\uFEFFID,Fecha,Hora,DNI,Nombre Completo\n';
+        rows.forEach(r => {
+            const dni = r.user_id === 999999 ? 'admin' : (r.dni || 'Desconocido');
+            const nombre = r.user_id === 999999 ? 'Bloqueo Administrador' : (r.nombre_completo || 'N/A');
+            csv += `${r.id},${r.date},${r.time},${dni},"${nombre}"\n`;
+        });
+
+        res.send(csv);
     });
 });
 

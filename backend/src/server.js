@@ -240,10 +240,17 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
     }
 
     const now = new Date();
-    // Ajustar zona horaria si es necesario, pero usando toLocaleTimeString('es-ES') aseguramos la hora local.
-    const todayStr = now.toISOString().split('T')[0];
+    // Restar 30 minutos a la hora actual.
+    // Esto hace que una cita de las "14:00" siga apareciendo hasta las "14:30".
+    const adjustedNow = new Date(now.getTime() - 30 * 60000);
+    
+    // Obtener fecha y hora en formato local (Madrid)
+    const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Madrid' };
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Madrid' };
-    const nowTimeStr = new Intl.DateTimeFormat('es-ES', timeOptions).format(now);
+    
+    // Usamos 'en-CA' (Canadá) porque su formato estándar es YYYY-MM-DD, que es el que usa la BD.
+    const adjustedTodayStr = new Intl.DateTimeFormat('en-CA', dateOptions).format(adjustedNow);
+    const adjustedTimeStr = new Intl.DateTimeFormat('es-ES', timeOptions).format(adjustedNow);
 
     db.all(`
         SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number
@@ -251,7 +258,7 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
         LEFT JOIN users u ON a.user_id = u.id
         WHERE a.date > ? OR (a.date = ? AND a.time >= ?)
         ORDER BY a.date, a.time
-    `, [todayStr, todayStr, nowTimeStr], (err, rows) => {
+    `, [adjustedTodayStr, adjustedTodayStr, adjustedTimeStr], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Error al obtener todas las citas' });
         
         // Mapear el nombre_completo para el administrador si no existe en BD

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays } from 'lucide-react';
+import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays, Megaphone } from 'lucide-react';
 import CalendarComponent from './CalendarComponent';
 
 export default function AdminDashboard({ user }) {
   const [allAppointments, setAllAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceStatus, setServiceStatus] = useState('available');
+  const [customMessageActive, setCustomMessageActive] = useState(false);
+  const [customMessageText, setCustomMessageText] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const fetchServiceStatus = async () => {
@@ -14,6 +16,8 @@ export default function AdminDashboard({ user }) {
       if (res.ok) {
         const data = await res.json();
         setServiceStatus(data.status);
+        setCustomMessageActive(data.customMessageActive);
+        setCustomMessageText(data.customMessageText);
       }
     } catch (err) {
       console.error(err);
@@ -54,6 +58,26 @@ export default function AdminDashboard({ user }) {
       }
     } catch (err) {
       console.error('Error toggling status', err);
+    }
+  };
+
+  const handleSaveMessage = async () => {
+    try {
+      const res = await fetch('/api/admin/message', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ active: customMessageActive, text: customMessageText })
+      });
+      if (res.ok) {
+        alert('Mensaje guardado correctamente');
+      } else {
+        alert('Error al guardar el mensaje');
+      }
+    } catch (err) {
+      console.error('Error saving message', err);
     }
   };
 
@@ -109,37 +133,112 @@ export default function AdminDashboard({ user }) {
           </p>
         </div>
         
-        <div style={{ 
-          padding: '16px', 
-          backgroundColor: 'var(--surface)', 
-          border: '1px solid var(--border)', 
-          borderRadius: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          minWidth: '200px'
-        }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>ESTADO DEL SERVICIO</div>
-          <button 
-            onClick={handleToggleStatus}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              backgroundColor: serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              color: serviceStatus === 'available' ? 'var(--success)' : 'var(--danger)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Power size={16} />
-            {serviceStatus === 'available' ? 'Disponible (Activo)' : 'Cerrado (Inactivo)'}
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: 'var(--surface)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+            minWidth: '300px'
+          }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>ESTADO DEL SERVICIO</div>
+            <button 
+              onClick={handleToggleStatus}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                backgroundColor: serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                color: serviceStatus === 'available' ? 'var(--success)' : 'var(--danger)',
+                transition: 'all 0.2s',
+                width: '100%',
+                justifyContent: 'center'
+              }}
+            >
+              <Power size={16} />
+              {serviceStatus === 'available' ? 'Disponible (Activo)' : 'Cerrado (Inactivo)'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ 
+        padding: '16px', 
+        backgroundColor: 'var(--surface)', 
+        border: '1px solid var(--border)', 
+        borderRadius: '8px',
+        marginBottom: '32px'
+      }}>
+        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '16px' }}>MENSAJE DE AVISO</div>
+        
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'stretch' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <textarea 
+              className="input-field"
+              value={customMessageText}
+              onChange={(e) => setCustomMessageText(e.target.value)}
+              placeholder="Ej: No hacemos Certificados Digitales"
+              style={{ width: '100%', resize: 'vertical', minHeight: '60px', fontFamily: 'inherit' }}
+            />
+            <button 
+              onClick={handleSaveMessage}
+              className="btn btn-primary"
+              style={{ padding: '8px 16px', borderRadius: '4px', width: 'max-content' }}
+            >
+              Guardar Texto
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button 
+              onClick={async () => {
+                const newState = !customMessageActive;
+                setCustomMessageActive(newState);
+                try {
+                  const res = await fetch('/api/admin/message', {
+                    method: 'PUT',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                    },
+                    body: JSON.stringify({ active: newState, text: customMessageText })
+                  });
+                  if (!res.ok) alert('Error al cambiar el estado del mensaje');
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                height: '100%',
+                backgroundColor: customMessageActive ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                color: customMessageActive ? '#eab308' : 'var(--danger)',
+                transition: 'all 0.2s',
+                minWidth: '160px'
+              }}
+            >
+              <Megaphone size={24} />
+              {customMessageActive ? 'Mostrando' : 'Oculto'}
+            </button>
+          </div>
         </div>
       </div>
 

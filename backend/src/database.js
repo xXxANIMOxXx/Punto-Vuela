@@ -27,6 +27,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
             value TEXT
         )`, () => {
             db.run(`INSERT OR IGNORE INTO system_settings (key, value) VALUES ('service_status', 'available')`);
+            db.run(`INSERT OR IGNORE INTO system_settings (key, value) VALUES ('custom_message_active', 'false')`);
+            db.run(`INSERT OR IGNORE INTO system_settings (key, value) VALUES ('custom_message_text', '')`);
         });
     }
 });

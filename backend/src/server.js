@@ -184,9 +184,19 @@ app.delete('/api/appointments/:id', authenticateToken, (req, res) => {
 
 // Obtener estado del servicio (público)
 app.get('/api/status', (req, res) => {
-    db.get(`SELECT value FROM system_settings WHERE key = 'service_status'`, (err, row) => {
+    db.all(`SELECT key, value FROM system_settings`, (err, rows) => {
         if (err) return res.status(500).json({ error: 'Error obteniendo estado del sistema' });
-        res.json({ status: row ? row.value : 'available' });
+        
+        const settings = {};
+        if (rows) {
+            rows.forEach(r => { settings[r.key] = r.value; });
+        }
+        
+        res.json({ 
+            status: settings['service_status'] || 'available',
+            customMessageActive: settings['custom_message_active'] === 'true',
+            customMessageText: settings['custom_message_text'] || ''
+        });
     });
 });
 
@@ -204,6 +214,23 @@ app.put('/api/admin/status', authenticateToken, (req, res) => {
     db.run(`UPDATE system_settings SET value = ? WHERE key = 'service_status'`, [status], function(err) {
         if (err) return res.status(500).json({ error: 'Error actualizando el estado' });
         res.json({ status });
+    });
+});
+
+// Admin: Actualizar mensaje personalizado
+app.put('/api/admin/message', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+    }
+
+    const { active, text } = req.body;
+
+    db.serialize(() => {
+        db.run(`UPDATE system_settings SET value = ? WHERE key = 'custom_message_active'`, [active ? 'true' : 'false']);
+        db.run(`UPDATE system_settings SET value = ? WHERE key = 'custom_message_text'`, [text || ''], function(err) {
+            if (err) return res.status(500).json({ error: 'Error actualizando el mensaje' });
+            res.json({ active, text });
+        });
     });
 });
 

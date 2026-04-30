@@ -3,11 +3,7 @@ import { format, addDays, subDays, startOfWeek, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle, UserCheck } from 'lucide-react';
 
-const TIME_SLOTS = [
-  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
-  '13:00', '13:30', '14:00', '14:30'
-];
+
 
 export default function CalendarComponent({ appointments, myAppointments, selectedDate, onSelectDate, onCreate, onDelete }) {
   
@@ -18,6 +14,28 @@ export default function CalendarComponent({ appointments, myAppointments, select
 
   // Filter appointments for selected day
   const dayAppointments = appointments.filter(a => a.date === dateStr);
+
+  const getSlotsForDate = (date) => {
+    const day = date.getDay(); // 0 is Sunday, 1 is Monday, ..., 3 is Wednesday, 6 is Saturday
+    if (day === 0 || day === 6) {
+      return []; // Fines de semana cerrado
+    }
+    if (day === 3) {
+      // Miércoles: 14:30 a 19:30
+      return [
+        '14:30', '15:00', '15:30', '16:00', '16:30', 
+        '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
+      ];
+    }
+    // Lunes, Martes, Jueves, Viernes: 08:00 a 14:00
+    return [
+      '08:00', '08:30', '09:00', '09:30', 
+      '10:00', '10:30', '11:00', '11:30', 
+      '12:00', '12:30', '13:00', '13:30', '14:00'
+    ];
+  };
+
+  const dynamicTimeSlots = getSlotsForDate(selectedDate);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -32,9 +50,14 @@ export default function CalendarComponent({ appointments, myAppointments, select
       </div>
 
       {/* Slots de tiempo */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
-        {TIME_SLOTS.map(time => {
-          const appointmentInfo = dayAppointments.find(a => a.time === time);
+      {dynamicTimeSlots.length === 0 ? (
+        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: '8px' }}>
+          El centro está cerrado este día. Por favor, selecciona un día laborable.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px' }}>
+          {dynamicTimeSlots.map(time => {
+            const appointmentInfo = dayAppointments.find(a => a.time === time);
           const isOccupied = !!appointmentInfo;
           // Check if it's MY appointment
           const isMine = isOccupied && myAppointments.some(ma => ma.id === appointmentInfo.id);
@@ -92,7 +115,8 @@ export default function CalendarComponent({ appointments, myAppointments, select
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
     </div>
   );

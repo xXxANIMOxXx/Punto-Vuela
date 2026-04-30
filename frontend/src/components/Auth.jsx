@@ -9,11 +9,17 @@ export default function Auth({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [serviceStatus, setServiceStatus] = useState(null);
+  const [customMessageActive, setCustomMessageActive] = useState(false);
+  const [customMessageText, setCustomMessageText] = useState('');
 
   useEffect(() => {
     fetch('/api/status')
       .then(res => res.json())
-      .then(data => setServiceStatus(data.status))
+      .then(data => {
+        setServiceStatus(data.status);
+        setCustomMessageActive(data.customMessageActive);
+        setCustomMessageText(data.customMessageText);
+      })
       .catch(err => console.error('Error fetching service status:', err));
   }, []);
 
@@ -97,7 +103,7 @@ export default function Auth({ onLogin }) {
         {serviceStatus && (
           <div style={{
             padding: '12px',
-            marginBottom: '24px',
+            marginBottom: customMessageActive ? '16px' : '24px',
             borderRadius: '8px',
             fontWeight: 600,
             fontSize: '0.95rem',
@@ -106,6 +112,25 @@ export default function Auth({ onLogin }) {
             border: `1px solid ${serviceStatus === 'available' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
           }}>
             {serviceStatus === 'available' ? '🟢 Estamos disponibles' : '🔴 Estamos fuera de servicio'}
+          </div>
+        )}
+
+        {customMessageActive && customMessageText && (
+          <div style={{
+            padding: '12px',
+            marginBottom: '24px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            backgroundColor: 'rgba(234, 179, 8, 0.1)',
+            color: '#ca8a04',
+            border: '1px solid rgba(234, 179, 8, 0.2)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px'
+          }}>
+            <span>⚠️</span>
+            <span>{customMessageText}</span>
           </div>
         )}
 

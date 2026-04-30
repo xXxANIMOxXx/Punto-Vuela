@@ -21,16 +21,16 @@ export default function CalendarComponent({ appointments, myAppointments, select
       return []; // Fines de semana cerrado
     }
     if (day === 3) {
-      // Miércoles: 14:30 a 19:30
+      // Miércoles: 14:30 a 19:30 (Descanso 17:00 a 17:30)
       return [
         '14:30', '15:00', '15:30', '16:00', '16:30', 
-        '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
+        '17:30', '18:00', '18:30', '19:00', '19:30'
       ];
     }
-    // Lunes, Martes, Jueves, Viernes: 08:00 a 14:00
+    // Lunes, Martes, Jueves, Viernes: 08:00 a 14:00 (Descanso 11:00 a 11:30)
     return [
       '08:00', '08:30', '09:00', '09:30', 
-      '10:00', '10:30', '11:00', '11:30', 
+      '10:00', '10:30', '11:30', 
       '12:00', '12:30', '13:00', '13:30', '14:00'
     ];
   };

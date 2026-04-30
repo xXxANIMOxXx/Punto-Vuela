@@ -41,7 +41,7 @@ function App() {
           <span>Punto Vuela Citas</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>DNI: {user.dni}</span>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>DNI / NIE: {user.dni === 'admin' ? 'admin' : user.dni.toUpperCase()}</span>
           <button className="btn btn-danger" onClick={handleLogout} style={{ padding: '8px 16px', fontSize: '0.875rem' }}>
             <LogOut size={16} /> Salir
           </button>

@@ -228,7 +228,7 @@ export default function AdminDashboard({ user }) {
                <input 
                  type="text" 
                  className="input-field" 
-                 placeholder="DNI a borrar" 
+                 placeholder="DNI / NIE a borrar" 
                  value={dniToDelete}
                  onChange={(e) => setDniToDelete(e.target.value)}
                  style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--text-main)' }}

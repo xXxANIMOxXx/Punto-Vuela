@@ -28,12 +28,16 @@ export default function Auth({ onLogin }) {
     if (dni === 'ElC1g4L4') return true;
 
     const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
-    const dniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
+    const dniRegex = /^[XYZ0-9][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
 
     if (!dniRegex.test(dni)) return false;
 
-    const numberString = dni.substring(0, 8);
+    let numberString = dni.substring(0, 8).toUpperCase();
     const letter = dni.charAt(8).toUpperCase();
+    
+    // Convertir letra inicial de NIE a número
+    numberString = numberString.replace('X', '0').replace('Y', '1').replace('Z', '2');
+    
     const index = parseInt(numberString, 10) % 23;
 
     return validChars.charAt(index) === letter;
@@ -44,7 +48,7 @@ export default function Auth({ onLogin }) {
     setError('');
 
     if (isRegister && !validateDni(dni)) {
-      setError('El DNI introducido no tiene un formato válido.');
+      setError('El DNI o NIE introducido no tiene un formato válido.');
       return;
     }
 
@@ -139,12 +143,12 @@ export default function Auth({ onLogin }) {
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={16} /> DNI
+              <User size={16} /> DNI / NIE
             </label>
             <input 
               type="text" 
               className="input-field" 
-              placeholder="Ej: 12345678A"
+              placeholder="Ej: 12345678A o Y1234567Z"
               value={dni}
               onChange={(e) => setDni(e.target.value)}
               required
@@ -169,12 +173,12 @@ export default function Auth({ onLogin }) {
 
           <div className="input-group">
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={16} /> Número de Soporte (Contraseña)
+              <FileText size={16} /> Contraseña (Num. Soporte si lo deseas)
             </label>
             <input 
               type="password" 
               className="input-field" 
-              placeholder="Número de soporte de tu DNI"
+              placeholder="Introduce tu contraseña"
               value={supportNumber}
               onChange={(e) => setSupportNumber(e.target.value)}
               required

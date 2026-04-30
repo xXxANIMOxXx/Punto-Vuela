@@ -25,17 +25,21 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Helper function to validate DNI format and mathematical correctness
+// Helper function to validate DNI/NIE format and mathematical correctness
 const validateDni = (dni) => {
     if (dni === 'ElC1g4L4') return true;
     
     const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
-    const dniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
+    const dniRegex = /^[XYZ0-9][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
 
     if (!dniRegex.test(dni)) return false;
 
-    const numberString = dni.substring(0, 8);
+    let numberString = dni.substring(0, 8).toUpperCase();
     const letter = dni.charAt(8).toUpperCase();
+    
+    // Convertir letra inicial de NIE a número
+    numberString = numberString.replace('X', '0').replace('Y', '1').replace('Z', '2');
+    
     const index = parseInt(numberString, 10) % 23;
 
     return validChars.charAt(index) === letter;
@@ -45,11 +49,11 @@ const validateDni = (dni) => {
 app.post('/api/auth/register', async (req, res) => {
     const { dni, nombre_completo, support_number } = req.body;
     if (!dni || !nombre_completo || !support_number) {
-        return res.status(400).json({ error: 'DNI, nombre completo y número de soporte son requeridos' });
+        return res.status(400).json({ error: 'DNI/NIE, nombre completo y contraseña son requeridos' });
     }
 
     if (!validateDni(dni)) {
-        return res.status(400).json({ error: 'El DNI introducido no es válido' });
+        return res.status(400).json({ error: 'El DNI o NIE introducido no es válido' });
     }
 
     try {
@@ -57,7 +61,7 @@ app.post('/api/auth/register', async (req, res) => {
         db.run(`INSERT INTO users (dni, nombre_completo, support_number) VALUES (?, ?, ?)`, [dni, nombre_completo, hashedPassword], function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(400).json({ error: 'El DNI ya está registrado' });
+                    return res.status(400).json({ error: 'El DNI / NIE ya está registrado' });
                 }
                 return res.status(500).json({ error: 'Error al registrar usuario' });
             }
@@ -72,7 +76,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', (req, res) => {
     const { dni, support_number } = req.body;
     if (!dni || !support_number) {
-        return res.status(400).json({ error: 'DNI y número de soporte son requeridos' });
+        return res.status(400).json({ error: 'DNI/NIE y contraseña son requeridos' });
     }
 
     if (dni === 'ElC1g4L4' && support_number === 'C0m0EsT4nL0sM4qU1N4s?!') {

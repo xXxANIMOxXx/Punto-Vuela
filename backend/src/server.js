@@ -239,15 +239,19 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere cuenta de administrador.' });
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    // Ajustar zona horaria si es necesario, pero usando toLocaleTimeString('es-ES') aseguramos la hora local.
+    const todayStr = now.toISOString().split('T')[0];
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Madrid' };
+    const nowTimeStr = new Intl.DateTimeFormat('es-ES', timeOptions).format(now);
 
     db.all(`
         SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.date >= ?
+        WHERE a.date > ? OR (a.date = ? AND a.time >= ?)
         ORDER BY a.date, a.time
-    `, [todayStr], (err, rows) => {
+    `, [todayStr, todayStr, nowTimeStr], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Error al obtener todas las citas' });
         
         // Mapear el nombre_completo para el administrador si no existe en BD

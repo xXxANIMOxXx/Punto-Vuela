@@ -8,6 +8,8 @@ export default function AdminDashboard({ user }) {
   const [serviceStatus, setServiceStatus] = useState('available');
   const [customMessageActive, setCustomMessageActive] = useState(false);
   const [customMessageText, setCustomMessageText] = useState('');
+  const [dniToDelete, setDniToDelete] = useState('');
+  const [deleteUserMsg, setDeleteUserMsg] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const fetchServiceStatus = async () => {
@@ -140,6 +142,26 @@ export default function AdminDashboard({ user }) {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!dniToDelete.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/users/${dniToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteUserMsg(data.error || 'Error al borrar');
+      } else {
+        setDeleteUserMsg('Usuario borrado correctamente');
+        setDniToDelete('');
+        fetchAdminAppointments();
+      }
+    } catch (err) {
+      setDeleteUserMsg('Error de red al borrar');
+    }
+  };
+
   // Filtrar las citas que son bloqueos del administrador
   const adminAppointments = allAppointments.filter(app => app.dni === 'admin');
 
@@ -189,6 +211,37 @@ export default function AdminDashboard({ user }) {
               <Power size={16} />
               {serviceStatus === 'available' ? 'Disponible (Activo)' : 'Cerrado (Inactivo)'}
             </button>
+          </div>
+
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: 'var(--surface)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            minWidth: '300px'
+          }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>GESTIÓN DE USUARIOS</div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+               <input 
+                 type="text" 
+                 className="input-field" 
+                 placeholder="DNI a borrar" 
+                 value={dniToDelete}
+                 onChange={(e) => setDniToDelete(e.target.value)}
+                 style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--text-main)' }}
+               />
+               <button 
+                 onClick={handleDeleteUser} 
+                 className="btn btn-danger"
+                 style={{ padding: '8px 16px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}
+               >
+                 <Trash2 size={16} /> Borrar
+               </button>
+            </div>
+            {deleteUserMsg && <div style={{ fontSize: '0.875rem', textAlign: 'center', color: deleteUserMsg.includes('Error') || deleteUserMsg.includes('No encontrado') || deleteUserMsg.includes('No se puede') ? 'var(--danger)' : 'var(--success)' }}>{deleteUserMsg}</div>}
           </div>
         </div>
       </div>

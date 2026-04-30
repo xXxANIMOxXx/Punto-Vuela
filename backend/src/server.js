@@ -314,6 +314,37 @@ app.get('/api/admin/history/export', authenticateToken, (req, res) => {
     });
 });
 
+// Admin: Borrar usuario y sus citas por DNI
+app.delete('/api/admin/users/:dni', authenticateToken, (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+    }
+
+    const targetDni = req.params.dni.toLowerCase().trim();
+
+    // No permitir borrar al admin
+    if (targetDni === 'elc1g4l4' || targetDni === 'admin') {
+        return res.status(400).json({ error: 'No se puede borrar al administrador' });
+    }
+
+    db.get(`SELECT id FROM users WHERE LOWER(TRIM(dni)) = ?`, [targetDni], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Error en la base de datos' });
+        if (!row) return res.status(404).json({ error: 'Usuario no encontrado. Comprueba el DNI.' });
+
+        const userId = row.id;
+
+        db.serialize(() => {
+            db.run(`DELETE FROM appointments WHERE user_id = ?`, [userId], (err) => {
+                if (err) console.error('Error borrando citas del usuario:', err);
+            });
+            db.run(`DELETE FROM users WHERE id = ?`, [userId], (err) => {
+                if (err) return res.status(500).json({ error: 'Error al borrar el usuario' });
+                res.json({ message: 'Usuario y sus citas eliminados correctamente' });
+            });
+        });
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
 });

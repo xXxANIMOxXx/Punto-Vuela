@@ -47,9 +47,9 @@ const validateDni = (dni) => {
 
 // Registro de usuario
 app.post('/api/auth/register', async (req, res) => {
-    const { dni, nombre_completo, support_number } = req.body;
-    if (!dni || !nombre_completo || !support_number) {
-        return res.status(400).json({ error: 'DNI/NIE, nombre completo y contraseña son requeridos' });
+    const { dni, nombre_completo, telefono, support_number } = req.body;
+    if (!dni || !nombre_completo || !telefono || !support_number) {
+        return res.status(400).json({ error: 'DNI/NIE, nombre completo, teléfono y contraseña son requeridos' });
     }
 
     if (!validateDni(dni)) {
@@ -58,7 +58,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(support_number, 10);
-        db.run(`INSERT INTO users (dni, nombre_completo, support_number) VALUES (?, ?, ?)`, [dni, nombre_completo, hashedPassword], function(err) {
+        db.run(`INSERT INTO users (dni, nombre_completo, telefono, support_number) VALUES (?, ?, ?, ?)`, [dni, nombre_completo, telefono, hashedPassword], function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
                     return res.status(400).json({ error: 'El DNI / NIE ya está registrado' });
@@ -297,6 +297,58 @@ app.delete('/api/admin/appointments/:id', authenticateToken, (req, res) => {
     db.run(`DELETE FROM appointments WHERE id = ?`, [appointmentId], function(err) {
         if (err) return res.status(500).json({ error: 'Error al anular la cita desde admin' });
         res.json({ message: 'Cita anulada por el administrador' });
+    });
+});
+
+// Admin: Añadir cita manualmente para un usuario
+app.post('/api/admin/appointments/manual', authenticateToken, async (req, res) => {
+    if (req.user.dni !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+    }
+
+    const { dni, nombre_completo, telefono, date, time } = req.body;
+    if (!dni || !nombre_completo || !telefono || !date || !time) {
+        return res.status(400).json({ error: 'DNI, Nombre, Teléfono, Fecha y Hora son requeridos.' });
+    }
+
+    if (!validateDni(dni)) {
+        return res.status(400).json({ error: 'El DNI o NIE introducido no es válido.' });
+    }
+
+    const insertAppointment = (userId) => {
+        db.get(`SELECT id FROM appointments WHERE date = ? AND time = ?`, [date, time], (err, row) => {
+            if (err) return res.status(500).json({ error: 'Error interno al verificar disponibilidad' });
+            if (row) return res.status(400).json({ error: 'Este hueco ya está ocupado' });
+
+            db.run(`INSERT INTO appointments (date, time, user_id) VALUES (?, ?, ?)`, [date, time, userId], function (err) {
+                if (err) return res.status(500).json({ error: 'Error al crear la cita' });
+                res.status(201).json({ id: this.lastID, date, time, message: 'Cita creada manualmente.' });
+            });
+        });
+    };
+
+    db.get(`SELECT id FROM users WHERE LOWER(TRIM(dni)) = ?`, [dni.toLowerCase().trim()], async (err, row) => {
+        if (err) return res.status(500).json({ error: 'Error interno al buscar usuario' });
+        
+        if (row) {
+            // Usuario existe, le actualizamos el teléfono para asegurarnos de que tenemos el actual, luego creamos la cita.
+            db.run(`UPDATE users SET telefono = ? WHERE id = ?`, [telefono, row.id], (updateErr) => {
+                if (updateErr) console.error('Error actualizando teléfono del usuario:', updateErr);
+                insertAppointment(row.id);
+            });
+        } else {
+            // Usuario no existe, lo creamos con el teléfono como contraseña.
+            try {
+                const hashedPassword = await bcrypt.hash(telefono, 10);
+                db.run(`INSERT INTO users (dni, nombre_completo, telefono, support_number) VALUES (?, ?, ?, ?)`, 
+                    [dni, nombre_completo, telefono, hashedPassword], function(insertErr) {
+                    if (insertErr) return res.status(500).json({ error: 'Error al registrar al nuevo usuario' });
+                    insertAppointment(this.lastID);
+                });
+            } catch (hashError) {
+                return res.status(500).json({ error: 'Error interno al generar contraseña' });
+            }
+        }
     });
 });
 

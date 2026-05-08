@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays, Megaphone, Download } from 'lucide-react';
+import { Trash2, UserSearch, Calendar as CalendarIcon, Power, CalendarDays, Megaphone, Download, RefreshCw, PlusSquare } from 'lucide-react';
 import CalendarComponent from './CalendarComponent';
 
 export default function AdminDashboard({ user }) {
@@ -11,6 +11,15 @@ export default function AdminDashboard({ user }) {
   const [dniToDelete, setDniToDelete] = useState('');
   const [deleteUserMsg, setDeleteUserMsg] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const [manualDni, setManualDni] = useState('');
+  const [manualNombre, setManualNombre] = useState('');
+  const [manualTelefono, setManualTelefono] = useState('');
+  const [manualDate, setManualDate] = useState('');
+  const [manualTime, setManualTime] = useState('');
+  const [manualError, setManualError] = useState('');
+  const [manualSuccess, setManualSuccess] = useState('');
+  const [manualLoading, setManualLoading] = useState(false);
 
   const fetchServiceStatus = async () => {
     try {
@@ -159,6 +168,47 @@ export default function AdminDashboard({ user }) {
       }
     } catch (err) {
       setDeleteUserMsg('Error de red al borrar');
+    }
+  };
+
+  const handleManualAppointment = async (e) => {
+    e.preventDefault();
+    setManualError('');
+    setManualSuccess('');
+    setManualLoading(true);
+
+    try {
+      const res = await fetch('/api/admin/appointments/manual', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ 
+          dni: manualDni, 
+          nombre_completo: manualNombre, 
+          telefono: manualTelefono, 
+          date: manualDate, 
+          time: manualTime 
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setManualError(data.error || 'Error al crear la cita manual');
+      } else {
+        setManualSuccess(data.message || 'Cita añadida correctamente');
+        setManualDni('');
+        setManualNombre('');
+        setManualTelefono('');
+        setManualDate('');
+        setManualTime('');
+        fetchAdminAppointments();
+      }
+    } catch (err) {
+      setManualError('Error de red al conectar con el servidor');
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -338,9 +388,62 @@ export default function AdminDashboard({ user }) {
         </div>
 
         <div style={{ marginTop: '32px' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--primary)' }}>
+            <PlusSquare size={28} /> Añadir Cita Manualmente
+          </h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+            Crea una cita para un usuario introduciendo sus datos. Si el usuario no existe, se registrará y usará su teléfono como contraseña inicial.
+          </p>
+          
+          <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <form onSubmit={handleManualAppointment} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>DNI / NIE</label>
+                  <input type="text" className="input-field" value={manualDni} onChange={e => setManualDni(e.target.value)} required placeholder="Ej: 12345678A" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: '2 1 300px' }}>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Nombre Completo</label>
+                  <input type="text" className="input-field" value={manualNombre} onChange={e => setManualNombre(e.target.value)} required placeholder="Ej: Juan Pérez" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Teléfono</label>
+                  <input type="tel" className="input-field" value={manualTelefono} onChange={e => setManualTelefono(e.target.value)} required placeholder="Ej: 600123456" style={{ width: '100%' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Fecha</label>
+                  <input type="date" className="input-field" value={manualDate} onChange={e => setManualDate(e.target.value)} required style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Hora</label>
+                  <input type="time" className="input-field" value={manualTime} onChange={e => setManualTime(e.target.value)} required style={{ width: '100%' }} />
+                </div>
+              </div>
+              
+              {manualError && <div style={{ color: 'var(--danger)', fontSize: '0.875rem', marginTop: '8px', padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px' }}>{manualError}</div>}
+              {manualSuccess && <div style={{ color: 'var(--success)', fontSize: '0.875rem', marginTop: '8px', padding: '12px', backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px' }}>{manualSuccess}</div>}
+
+              <button type="submit" className="btn btn-primary" disabled={manualLoading} style={{ width: 'max-content', marginTop: '8px' }}>
+                {manualLoading ? 'Añadiendo...' : 'Crear Cita Manual'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: 'var(--primary)' }}>
                <CalendarIcon size={28} /> Listado de Todas las Citas Activas
+               <button 
+                 onClick={fetchAdminAppointments}
+                 className="btn"
+                 style={{ marginLeft: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--surface)', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem' }}
+                 title="Recargar citas"
+               >
+                 <RefreshCw size={16} /> Recargar
+               </button>
             </h2>
             <button 
               onClick={handleExportHistory}

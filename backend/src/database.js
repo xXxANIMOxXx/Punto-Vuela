@@ -11,8 +11,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             dni TEXT UNIQUE,
             nombre_completo TEXT,
+            telefono TEXT,
             support_number TEXT
-        )`);
+        )`, () => {
+            db.run(`ALTER TABLE users ADD COLUMN telefono TEXT`, (err) => { /* ignore if already exists */ });
+        });
 
         db.run(`CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -5,6 +5,7 @@ export default function Auth({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [dni, setDni] = useState('');
   const [nombreCompleto, setNombreCompleto] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [supportNumber, setSupportNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,7 +59,7 @@ export default function Auth({ onLogin }) {
     
     try {
       const bodyPayload = isRegister 
-        ? { dni, nombre_completo: nombreCompleto, support_number: supportNumber } 
+        ? { dni, nombre_completo: nombreCompleto, telefono, support_number: supportNumber } 
         : { dni, support_number: supportNumber };
 
       const res = await fetch(`${endpoint}`, {
@@ -156,19 +157,35 @@ export default function Auth({ onLogin }) {
           </div>
 
           {isRegister && (
-            <div className="input-group">
-              <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={16} /> Nombre Completo
-              </label>
-              <input 
-                type="text" 
-                className="input-field" 
-                placeholder="Ej: Juan Pérez"
-                value={nombreCompleto}
-                onChange={(e) => setNombreCompleto(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="input-group">
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={16} /> Nombre Completo
+                </label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="Ej: Juan Pérez"
+                  value={nombreCompleto}
+                  onChange={(e) => setNombreCompleto(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={16} /> Número de Teléfono
+                </label>
+                <input 
+                  type="tel" 
+                  className="input-field" 
+                  placeholder="Ej: 600123456"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="input-group">

@@ -476,13 +476,14 @@ export default function AdminDashboard({ user }) {
                 <div style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
                   {app.date} a las {app.time}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '16px' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                   {app.dni === 'admin' ? (
                     <span>Nombre: Administrador</span>
                   ) : (
                     <>
                       <span>DNI: {app.dni}</span>
                       <span>Nombre: {app.nombre_completo || 'N/A'}</span>
+                      <span>Teléfono: {app.telefono || 'N/A'}</span>
                     </>
                   )}
                   <span>ID Reserva: #{app.id}</span>

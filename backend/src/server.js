@@ -253,7 +253,7 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
     const adjustedTimeStr = new Intl.DateTimeFormat('es-ES', timeOptions).format(adjustedNow);
 
     db.all(`
-        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number
+        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number, u.telefono
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         WHERE a.date > ? OR (a.date = ? AND a.time >= ?)
@@ -359,7 +359,7 @@ app.get('/api/admin/history/export', authenticateToken, (req, res) => {
     }
 
     db.all(`
-        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo
+        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.telefono
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         ORDER BY a.date DESC, a.time DESC
@@ -370,11 +370,12 @@ app.get('/api/admin/history/export', authenticateToken, (req, res) => {
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', 'attachment; filename="historial_citas.csv"');
         
-        let csv = '\uFEFFID,Fecha,Hora,DNI,Nombre Completo\n';
+        let csv = '\uFEFFID,Fecha,Hora,DNI,Nombre Completo,Teléfono\n';
         rows.forEach(r => {
             const dni = r.user_id === 999999 ? 'admin' : (r.dni || 'Desconocido');
             const nombre = r.user_id === 999999 ? 'Bloqueo Administrador' : (r.nombre_completo || 'N/A');
-            csv += `${r.id},${r.date},${r.time},${dni},"${nombre}"\n`;
+            const telefono = r.user_id === 999999 ? '' : (r.telefono || 'N/A');
+            csv += `${r.id},${r.date},${r.time},${dni},"${nombre}",${telefono}\n`;
         });
 
         res.send(csv);

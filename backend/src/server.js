@@ -1,15 +1,28 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const db = require('./database');
 
 const app = express();
 const PORT = 3000;
-const JWT_SECRET = 'punto_vuela_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_for_dev_key';
 
-app.use(cors());
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Limitar intentos de login (Protección Fuerza Bruta)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10, // Límite de 10 intentos por IP
+    message: { error: 'Demasiados intentos de inicio de sesión, por favor inténtalo de nuevo en 15 minutos.' }
+});
 
 // Middleware de autenticación
 const authenticateToken = (req, res, next) => {
@@ -27,8 +40,6 @@ const authenticateToken = (req, res, next) => {
 
 // Helper function to validate DNI/NIE format and mathematical correctness
 const validateDni = (dni) => {
-    if (dni === 'ElC1g4L4') return true;
-    
     const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
     const dniRegex = /^[XYZ0-9][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
 
@@ -73,15 +84,10 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Login de usuario
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', loginLimiter, (req, res) => {
     const { dni, support_number } = req.body;
     if (!dni || !support_number) {
         return res.status(400).json({ error: 'DNI/NIE y contraseña son requeridos' });
-    }
-
-    if (dni === 'ElC1g4L4' && support_number === 'C0m0EsT4nL0sM4qU1N4s?!') {
-        const token = jwt.sign({ id: 999999, dni: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
-        return res.json({ token, user: { id: 999999, dni: 'admin' } });
     }
 
     db.get(`SELECT * FROM users WHERE dni = ?`, [dni], async (err, user) => {
@@ -94,8 +100,17 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        const token = jwt.sign({ id: user.id, dni: user.dni }, JWT_SECRET, { expiresIn: '2h' });
-        res.json({ token, user: { id: user.id, dni: user.dni } });
+        // Si es el admin (ID 999999), añadir su flag especial y un tiempo de expiración mayor
+        let tokenOptions = { expiresIn: '2h' };
+        let tokenPayload = { id: user.id, dni: user.dni };
+        
+        if (user.id === 999999 || user.dni === 'ElC1g4L4') {
+            tokenPayload = { id: 999999, dni: 'admin' };
+            tokenOptions = { expiresIn: '8h' };
+        }
+
+        const token = jwt.sign(tokenPayload, JWT_SECRET, tokenOptions);
+        res.json({ token, user: tokenPayload });
     });
 });
 

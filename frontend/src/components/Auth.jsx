@@ -25,9 +25,6 @@ export default function Auth({ onLogin }) {
   }, []);
 
   const validateDni = (dni) => {
-    // Return true for admin login if needed (although login bypasses this, good to be safe)
-    if (dni === 'ElC1g4L4') return true;
-
     const validChars = 'TRWAGMYFPDXBNJZSQVHLCKET';
     const dniRegex = /^[XYZ0-9][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKET]$/i;
 

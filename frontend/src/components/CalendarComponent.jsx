@@ -27,10 +27,10 @@ export default function CalendarComponent({ appointments, myAppointments, select
         '17:30', '18:00', '18:30', '19:00', '19:30'
       ];
     }
-    // Lunes, Martes, Jueves, Viernes: 08:00 a 14:00 (Descanso 11:00 a 11:30)
+    // Lunes, Martes, Jueves, Viernes: 08:00 a 14:00 (Descanso 11:00 a 12:00)
     return [
       '08:00', '08:30', '09:00', '09:30', 
-      '10:00', '10:30', '11:30', 
+      '10:00', '10:30', 
       '12:00', '12:30', '13:00', '13:30', '14:00'
     ];
   };

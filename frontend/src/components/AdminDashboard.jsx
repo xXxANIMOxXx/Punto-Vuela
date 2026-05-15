@@ -23,7 +23,7 @@ export default function AdminDashboard({ user }) {
 
   const fetchServiceStatus = async () => {
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch('/api/status', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setServiceStatus(data.status);
@@ -38,7 +38,8 @@ export default function AdminDashboard({ user }) {
   const fetchAdminAppointments = async () => {
     try {
       const res = await fetch('/api/admin/appointments', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        cache: 'no-store'
       });
       if (res.ok) setAllAppointments(await res.json());
       setLoading(false);
@@ -437,10 +438,10 @@ export default function AdminDashboard({ user }) {
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: 'var(--primary)' }}>
                <CalendarIcon size={28} /> Listado de Todas las Citas Activas
                <button 
-                 onClick={fetchAdminAppointments}
+                 onClick={() => { fetchAdminAppointments(); fetchServiceStatus(); }}
                  className="btn"
                  style={{ marginLeft: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--surface)', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.875rem' }}
-                 title="Recargar citas"
+                 title="Recargar citas y estado"
                >
                  <RefreshCw size={16} /> Recargar
                </button>

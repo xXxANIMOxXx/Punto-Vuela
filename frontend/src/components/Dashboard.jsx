@@ -7,6 +7,7 @@ export default function Dashboard({ user }) {
   const [myAppointments, setMyAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedMotivo, setSelectedMotivo] = useState('');
 
   const fetchAppointments = async () => {
     try {
@@ -38,7 +39,7 @@ export default function Dashboard({ user }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ date: dateStr, time: timeStr })
+        body: JSON.stringify({ date: dateStr, time: timeStr, motivo: selectedMotivo })
       });
 
       if (res.ok) {
@@ -75,6 +76,22 @@ export default function Dashboard({ user }) {
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
           <Calendar color="var(--primary)" /> Calendario de Citas
         </h2>
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Motivo de la Cita (Opcional)</label>
+          <select 
+            value={selectedMotivo} 
+            onChange={(e) => setSelectedMotivo(e.target.value)}
+            className="input-field"
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text-main)' }}
+          >
+            <option value="">Selecciona un motivo...</option>
+            <option value="Ayuda con Dispositivos Informáticos">Ayuda con Dispositivos Informáticos</option>
+            <option value="Becas">Becas</option>
+            <option value="Certificados Digitales">Certificados Digitales</option>
+            <option value="Renta">Renta</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
         <CalendarComponent 
           appointments={appointments} 
           myAppointments={myAppointments}
@@ -103,7 +120,7 @@ export default function Dashboard({ user }) {
               <div key={app.id} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'var(--surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
                 <div>
                   <div style={{ fontWeight: 600 }}>{app.date}</div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{app.time}</div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{app.time} - {app.motivo || 'Otros'}</div>
                 </div>
                 <button 
                   onClick={() => handleDeleteAppointment(app.id)}

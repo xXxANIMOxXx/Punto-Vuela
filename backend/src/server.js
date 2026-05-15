@@ -119,11 +119,11 @@ app.get('/api/appointments', (req, res) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const { date } = req.query;
 
-    let query = `SELECT id, date, time FROM appointments WHERE date >= ?`;
+    let query = `SELECT id, date, time, motivo FROM appointments WHERE date >= ?`;
     let params = [todayStr];
 
     if (date) {
-        query = `SELECT id, date, time FROM appointments WHERE date = ?`;
+        query = `SELECT id, date, time, motivo FROM appointments WHERE date = ?`;
         params = [date];
     }
 
@@ -137,7 +137,7 @@ app.get('/api/appointments', (req, res) => {
 
 // Obtener mis citas (opcional, para UI)
 app.get('/api/appointments/me', authenticateToken, (req, res) => {
-    db.all(`SELECT id, date, time FROM appointments WHERE user_id = ?`, [req.user.id], (err, rows) => {
+    db.all(`SELECT id, date, time, motivo FROM appointments WHERE user_id = ?`, [req.user.id], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Error al obtener tus citas' });
         res.json(rows);
     });
@@ -145,7 +145,7 @@ app.get('/api/appointments/me', authenticateToken, (req, res) => {
 
 // Crear una cita
 app.post('/api/appointments', authenticateToken, (req, res) => {
-    const { date, time } = req.body;
+    const { date, time, motivo } = req.body;
     const userId = req.user.id;
     const isOwnerAdmin = req.user.dni === 'admin';
 
@@ -153,6 +153,7 @@ app.post('/api/appointments', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'Fecha y hora son requeridas' });
     }
 
+    const finalMotivo = motivo || 'Otros';
     const todayStr = new Date().toISOString().split('T')[0];
 
     // Función auxiliar para insertar la cita
@@ -163,9 +164,9 @@ app.post('/api/appointments', authenticateToken, (req, res) => {
             if (row) return res.status(400).json({ error: 'Este hueco ya está ocupado' });
 
             // Insertar cita
-            db.run(`INSERT INTO appointments (date, time, user_id) VALUES (?, ?, ?)`, [date, time, userId], function (err) {
+            db.run(`INSERT INTO appointments (date, time, user_id, motivo) VALUES (?, ?, ?, ?)`, [date, time, userId, finalMotivo], function (err) {
                 if (err) return res.status(500).json({ error: 'Error al crear la cita' });
-                res.status(201).json({ id: this.lastID, date, time });
+                res.status(201).json({ id: this.lastID, date, time, motivo: finalMotivo });
             });
         });
     };
@@ -268,7 +269,7 @@ app.get('/api/admin/appointments', authenticateToken, (req, res) => {
     const adjustedTimeStr = new Intl.DateTimeFormat('es-ES', timeOptions).format(adjustedNow);
 
     db.all(`
-        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.support_number, u.telefono
+        SELECT a.id, a.date, a.time, a.motivo, a.user_id, u.dni, u.nombre_completo, u.support_number, u.telefono
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         WHERE a.date > ? OR (a.date = ? AND a.time >= ?)
@@ -321,7 +322,7 @@ app.post('/api/admin/appointments/manual', authenticateToken, async (req, res) =
         return res.status(403).json({ error: 'Acceso denegado.' });
     }
 
-    const { dni, nombre_completo, telefono, date, time } = req.body;
+    const { dni, nombre_completo, telefono, date, time, motivo } = req.body;
     if (!dni || !nombre_completo || !telefono || !date || !time) {
         return res.status(400).json({ error: 'DNI, Nombre, Teléfono, Fecha y Hora son requeridos.' });
     }
@@ -329,15 +330,17 @@ app.post('/api/admin/appointments/manual', authenticateToken, async (req, res) =
     if (!validateDni(dni)) {
         return res.status(400).json({ error: 'El DNI o NIE introducido no es válido.' });
     }
+    
+    const finalMotivo = motivo || 'Otros';
 
     const insertAppointment = (userId) => {
         db.get(`SELECT id FROM appointments WHERE date = ? AND time = ?`, [date, time], (err, row) => {
             if (err) return res.status(500).json({ error: 'Error interno al verificar disponibilidad' });
             if (row) return res.status(400).json({ error: 'Este hueco ya está ocupado' });
 
-            db.run(`INSERT INTO appointments (date, time, user_id) VALUES (?, ?, ?)`, [date, time, userId], function (err) {
+            db.run(`INSERT INTO appointments (date, time, user_id, motivo) VALUES (?, ?, ?, ?)`, [date, time, userId, finalMotivo], function (err) {
                 if (err) return res.status(500).json({ error: 'Error al crear la cita' });
-                res.status(201).json({ id: this.lastID, date, time, message: 'Cita creada manualmente.' });
+                res.status(201).json({ id: this.lastID, date, time, motivo: finalMotivo, message: 'Cita creada manualmente.' });
             });
         });
     };
@@ -374,7 +377,7 @@ app.get('/api/admin/history/export', authenticateToken, (req, res) => {
     }
 
     db.all(`
-        SELECT a.id, a.date, a.time, a.user_id, u.dni, u.nombre_completo, u.telefono
+        SELECT a.id, a.date, a.time, a.motivo, a.user_id, u.dni, u.nombre_completo, u.telefono
         FROM appointments a
         LEFT JOIN users u ON a.user_id = u.id
         ORDER BY a.date DESC, a.time DESC
@@ -385,12 +388,13 @@ app.get('/api/admin/history/export', authenticateToken, (req, res) => {
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', 'attachment; filename="historial_citas.csv"');
         
-        let csv = '\uFEFFID,Fecha,Hora,DNI,Nombre Completo,Teléfono\n';
+        let csv = '\uFEFFID,Fecha,Hora,Motivo,DNI,Nombre Completo,Teléfono\n';
         rows.forEach(r => {
             const dni = r.user_id === 999999 ? 'admin' : (r.dni || 'Desconocido');
             const nombre = r.user_id === 999999 ? 'Bloqueo Administrador' : (r.nombre_completo || 'N/A');
             const telefono = r.user_id === 999999 ? '' : (r.telefono || 'N/A');
-            csv += `${r.id},${r.date},${r.time},${dni},"${nombre}",${telefono}\n`;
+            const motivo = r.motivo || 'Otros';
+            csv += `${r.id},${r.date},${r.time},"${motivo}",${dni},"${nombre}",${telefono}\n`;
         });
 
         res.send(csv);

@@ -15,8 +15,8 @@ export default function AdminDashboard({ user }) {
   const [manualDni, setManualDni] = useState('');
   const [manualNombre, setManualNombre] = useState('');
   const [manualTelefono, setManualTelefono] = useState('');
-  const [manualDate, setManualDate] = useState('');
-  const [manualTime, setManualTime] = useState('');
+  const [manualMotivo, setManualMotivo] = useState('');
+  const [manualSelectedDate, setManualSelectedDate] = useState(new Date());
   const [manualError, setManualError] = useState('');
   const [manualSuccess, setManualSuccess] = useState('');
   const [manualLoading, setManualLoading] = useState(false);
@@ -172,11 +172,16 @@ export default function AdminDashboard({ user }) {
     }
   };
 
-  const handleManualAppointment = async (e) => {
-    e.preventDefault();
+  const handleManualAppointment = async (dateStr, timeStr) => {
     setManualError('');
     setManualSuccess('');
     setManualLoading(true);
+
+    if (!manualDni || !manualNombre || !manualTelefono) {
+      setManualError('Debes rellenar DNI, Nombre y Teléfono antes de elegir la fecha en el calendario.');
+      setManualLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/admin/appointments/manual', {
@@ -189,8 +194,9 @@ export default function AdminDashboard({ user }) {
           dni: manualDni, 
           nombre_completo: manualNombre, 
           telefono: manualTelefono, 
-          date: manualDate, 
-          time: manualTime 
+          date: dateStr, 
+          time: timeStr,
+          motivo: manualMotivo
         })
       });
 
@@ -202,8 +208,7 @@ export default function AdminDashboard({ user }) {
         setManualDni('');
         setManualNombre('');
         setManualTelefono('');
-        setManualDate('');
-        setManualTime('');
+        setManualMotivo('');
         fetchAdminAppointments();
       }
     } catch (err) {
@@ -397,7 +402,7 @@ export default function AdminDashboard({ user }) {
           </p>
           
           <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <form onSubmit={handleManualAppointment} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                 <div style={{ flex: '1 1 200px' }}>
                   <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>DNI / NIE</label>
@@ -412,24 +417,39 @@ export default function AdminDashboard({ user }) {
                   <input type="tel" className="input-field" value={manualTelefono} onChange={e => setManualTelefono(e.target.value)} required placeholder="Ej: 600123456" style={{ width: '100%' }} />
                 </div>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ flex: '1 1 200px' }}>
-                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Fecha</label>
-                  <input type="date" className="input-field" value={manualDate} onChange={e => setManualDate(e.target.value)} required style={{ width: '100%' }} />
-                </div>
-                <div style={{ flex: '1 1 200px' }}>
-                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Hora</label>
-                  <input type="time" className="input-field" value={manualTime} onChange={e => setManualTime(e.target.value)} required style={{ width: '100%' }} />
-                </div>
+
+              <div style={{ marginBottom: '8px' }}>
+                <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Motivo de la Cita (Opcional)</label>
+                <select 
+                  value={manualMotivo} 
+                  onChange={(e) => setManualMotivo(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--text-main)' }}
+                >
+                  <option value="">Selecciona un motivo...</option>
+                  <option value="Ayuda con Dispositivos Informáticos">Ayuda con Dispositivos Informáticos</option>
+                  <option value="Becas">Becas</option>
+                  <option value="Certificados Digitales">Certificados Digitales</option>
+                  <option value="Renta">Renta</option>
+                  <option value="Otros">Otros</option>
+                </select>
               </div>
               
-              {manualError && <div style={{ color: 'var(--danger)', fontSize: '0.875rem', marginTop: '8px', padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px' }}>{manualError}</div>}
-              {manualSuccess && <div style={{ color: 'var(--success)', fontSize: '0.875rem', marginTop: '8px', padding: '12px', backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px' }}>{manualSuccess}</div>}
+              {manualError && <div style={{ color: 'var(--danger)', fontSize: '0.875rem', padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px' }}>{manualError}</div>}
+              {manualSuccess && <div style={{ color: 'var(--success)', fontSize: '0.875rem', padding: '12px', backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '8px' }}>{manualSuccess}</div>}
 
-              <button type="submit" className="btn btn-primary" disabled={manualLoading} style={{ width: 'max-content', marginTop: '8px' }}>
-                {manualLoading ? 'Añadiendo...' : 'Crear Cita Manual'}
-              </button>
-            </form>
+              <div style={{ marginTop: '16px' }}>
+                <label className="input-label" style={{ marginBottom: '16px', display: 'block', color: 'var(--primary)' }}>Selecciona la fecha y hora en el calendario para crear la cita:</label>
+                <CalendarComponent 
+                  appointments={allAppointments} 
+                  myAppointments={[]}
+                  selectedDate={manualSelectedDate}
+                  onSelectDate={setManualSelectedDate}
+                  onCreate={(dateStr, timeStr) => handleManualAppointment(dateStr, timeStr)}
+                  onDelete={() => {}}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -485,6 +505,7 @@ export default function AdminDashboard({ user }) {
                       <span>DNI: {app.dni}</span>
                       <span>Nombre: {app.nombre_completo || 'N/A'}</span>
                       <span>Teléfono: {app.telefono || 'N/A'}</span>
+                      <span>Motivo: {app.motivo || 'Otros'}</span>
                     </>
                   )}
                   <span>ID Reserva: #{app.id}</span>
